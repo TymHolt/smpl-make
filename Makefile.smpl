@@ -1,0 +1,19 @@
+# A comment
+# $(...) -> smp-make utility commands
+# all [match] -> All files in directory
+# all-recursive [match] -> All files in directory and sub-directories
+
+# vars are initialized before executing goals
+var src_files = $(all-recursive *.cpp)
+
+# Main goal is excuted if no goal is specified
+goal main {
+    # Use vars using %
+    # To use the % character in a command, use %%
+    gcc -Isrc %src_files -o smplmake 
+}
+
+# This goald must be specified to be executed
+goal release {
+    gcc -Isrc $(c_files) -o bake -mtune=generic -march=x86-64
+}
