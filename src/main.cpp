@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <string.h>
+#include <fstream>
 
 typedef struct Target_Struct {
     std::string file_name;
@@ -28,6 +29,7 @@ void ParseTarget(Target *target, char* argument) {
         token_left += current_char;
     }
 
+    // TODO: Search if file name exists first, otherwise use as goal name
     if (index >= length) {
         target->goal_name = token_left;
         return;
@@ -46,6 +48,21 @@ void ParseTarget(Target *target, char* argument) {
 
 bool ExecuteTarget(Target *target) {
     std::cout << "Running goal " << target->file_name << ":" << target->goal_name << std::endl;
+
+    std::fstream file(target->file_name);
+
+    if (!file.is_open()) {
+        std::cout << "Unable to open file " << target->file_name << std::endl;
+        return false;
+    }
+
+    std::string line;
+    while (std::getline(file, line)) {
+        // Process line
+        std::cout << line << std::endl;
+    }
+
+    file.close();
     return true;
 }
 
