@@ -15,5 +15,5 @@ goal main {
 
 # This goald must be specified to be executed
 goal release {
-    gcc -Isrc $(c_files) -o bake -mtune=generic -march=x86-64
+    gcc -Isrc %c_files -o bake -mtune=generic -march=x86-64
 }
