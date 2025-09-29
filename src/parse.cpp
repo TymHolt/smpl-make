@@ -1,4 +1,5 @@
 #include <parse.hpp>
+#include <stdexcept>
 
 SmplParser::SmplParser() {
     m_parsing_goal = false;
@@ -18,7 +19,7 @@ void SmplParser::ParseLine(std::string line) {
         std::string type = m_parser.NextToken();
 
         if (!m_parser.HasMoreTokens()) 
-            throw "Expected identifier";
+            throw std::runtime_error(std::string("Expected identifier"));
 
         std::string identifier = m_parser.NextToken();
 
@@ -32,18 +33,18 @@ void SmplParser::ParseLine(std::string line) {
             return;    
         }
 
-        throw "Unknonw type " + type;
+        throw std::runtime_error(std::string("Expected identifier") + type);
     } else
         ParseGoalContentLine();
 }
 
 void SmplParser::ParseVarLine(std::string identifier) {
     if (!m_parser.HasMoreTokens() || m_parser.NextToken() != "=")
-        throw "Expected =";
+        throw std::runtime_error(std::string("Expected ="));
 
     for (SmplVariable variable : m_variables) {
         if (variable.m_name == identifier)
-           throw "Duplicate variable identifier " + identifier;
+           throw std::runtime_error(std::string("Duplicate variable identifier ") + identifier);
     }
 
     SmplVariable variable;
@@ -55,14 +56,14 @@ void SmplParser::ParseVarLine(std::string identifier) {
 
 void SmplParser::ParseGoalLine(std::string identifier) {
     if (!m_parser.HasMoreTokens() || m_parser.NextToken() != "{")
-        throw "Expected {";
+        throw std::runtime_error(std::string("Expected {}"));
 
     if (m_parser.HasMoreTokens())
-        throw "Expected line end";
+        throw std::runtime_error(std::string("Expected line end"));
 
     for (SmplGoal goal : m_goals) {
         if (goal.m_name == identifier)
-           throw "Duplicate goal identifier " + identifier;
+           throw std::runtime_error(std::string("Duplicate goal identifier ") + identifier);
     }
 
     m_parsing_goal = true;

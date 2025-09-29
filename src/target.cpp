@@ -65,18 +65,27 @@ bool SmplTarget::Run() {
     SmplParser parser;
     size_t line_nr = 0;
     std::string line;
+    bool error = false;
     while (std::getline(file, line)) {
         line_nr++;
         
         try {
             parser.ParseLine(line);
-        } catch (const char *error) {
-            std::cout << "Line " << line_nr << ": " << error << std::endl;
+        } catch (const std::runtime_error& exception) {
+            std::cout << "Line " << line_nr << ": " << exception.what() << std::endl;
+            error = true;
+            break;
+        } catch (...) {
+            std::cout << "Line " << line_nr << ": Unknown exception" << std::endl;
+            error = true;
             break;
         }
     }
 
     file.close();
+
+    if (error)
+        return false;
 
     for (SmplVariable variable : parser.GetVariables()) {
         std::cout << "Variable " << variable.m_name << " -> " << variable.m_value << std::endl;
