@@ -23,12 +23,12 @@ void SmplParser::ParseLine(std::string line) {
         std::string identifier = m_parser.NextToken();
 
         if (type == "var") {
-            ParseVarLine(line);
+            ParseVarLine(identifier);
             return;
         }
 
         if (type == "goal") {
-            ParseGoalLine(line);
+            ParseGoalLine(identifier);
             return;    
         }
 
@@ -41,7 +41,16 @@ void SmplParser::ParseVarLine(std::string identifier) {
     if (!m_parser.HasMoreTokens() || m_parser.NextToken() != "=")
         throw "Expected =";
 
-    // Parse...
+    for (SmplVariable variable : m_variables) {
+        if (variable.m_name == identifier)
+           throw "Duplicate variable identifier " + identifier;
+    }
+
+    SmplVariable variable;
+    variable.m_name = identifier;
+    variable.m_value = m_parser.GetRemaining();
+    
+    m_variables.push_back(variable);
 }
 
 void SmplParser::ParseGoalLine(std::string identifier) {
@@ -51,14 +60,32 @@ void SmplParser::ParseGoalLine(std::string identifier) {
     if (m_parser.HasMoreTokens())
         throw "Expected line end";
 
+    for (SmplGoal goal : m_goals) {
+        if (goal.m_name == identifier)
+           throw "Duplicate goal identifier " + identifier;
+    }
+
     m_parsing_goal = true;
+    m_current_goal.m_name = identifier;
+    m_current_goal.m_commands = {};
 }
 
 void SmplParser::ParseGoalContentLine() {
-   if (m_parser.NextToken() == "}") {
+   if (m_parser.PeekToken() == "}") {
         m_parsing_goal = false;
+        m_goals.push_back(m_current_goal);
         return;
    }
+
+   m_current_goal.m_commands.push_back(m_parser.GetRemaining());
+}
+
+std::vector<SmplVariable> SmplParser::GetVariables() {
+    return m_variables;
+}
+
+std::vector<SmplGoal> SmplParser::GetGoals() {
+    return m_goals;
 }
 
 Parser::Parser() {
@@ -122,4 +149,60 @@ std::string Parser::NextToken() {
     }
 
     return token;
+}
+
+std::string Parser::PeekToken() {
+    std::string token = "";
+    bool parseBegin = false;
+
+    for (size_t index = m_index; index < m_content.length(); index++) {
+        const char currentChar = m_content.at(index);
+
+        if (currentChar == '#')
+            break;
+
+        if (!parseBegin) {
+            if (!IsWhiteSpace(currentChar)) {
+                parseBegin = true;
+                index--;
+            }
+
+            continue;
+        }
+
+        if (IsWhiteSpace(currentChar))
+            break;
+
+        token += currentChar;
+    }
+
+    return token;
+}
+
+std::string Parser::GetRemaining() {
+    std::string result = "";
+    bool whitespaceSkippped = false;
+
+    for (; m_index < m_content.length(); m_index++) {
+        const char currentChar = m_content.at(m_index);
+
+        if (currentChar == '#') {
+            // Prevent interpreting the comment with another call
+            m_index = m_content.length();
+            break;
+        }
+
+        if (!whitespaceSkippped) {
+            if (!IsWhiteSpace(currentChar)) {
+                whitespaceSkippped = true;
+                m_index--;
+            }
+
+            continue;
+        }
+
+        result += currentChar;
+    }
+
+    return result;
 }

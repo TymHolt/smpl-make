@@ -72,11 +72,30 @@ bool SmplTarget::Run() {
             parser.ParseLine(line);
         } catch (const char *error) {
             std::cout << "Line " << line_nr << ": " << error << std::endl;
+            break;
         }
     }
 
     file.close();
-    return true;    
+
+    for (SmplVariable variable : parser.GetVariables()) {
+        std::cout << "Variable " << variable.m_name << " -> " << variable.m_value << std::endl;
+    }
+
+    for (SmplGoal goal : parser.GetGoals()) {
+        //std::cout << "Goal : " << goal.m_name << std::endl;
+        
+        if (goal.m_name == m_goal_name) {
+            for (std::string command : goal.m_commands) {
+                std::cout << "Command: " << command << std::endl;
+            }
+
+            return true;
+        }
+    }
+
+    std::cout << "Goal not found" << std::endl;
+    return false;    
 }
 
 std::string SmplTarget::GetFileName() {
