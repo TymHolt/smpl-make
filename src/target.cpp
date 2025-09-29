@@ -53,10 +53,6 @@ void SmplTarget::ParseArgument(char *argument) {
     m_goal_name = token_right;
 }
 
-void ExecuteCommand(std::string line) {
-
-}
-
 bool SmplTarget::Run() {
     std::cout << "Running goal " << m_file_name << ":" << m_goal_name << std::endl;
 
@@ -66,64 +62,18 @@ bool SmplTarget::Run() {
         return false;
     }
 
+    SmplParser parser;
     size_t line_nr = 0;
     std::string line;
-    Parser parser;
-    bool running_goal = false;
-    bool running_target_goal = false;
     while (std::getline(file, line)) {
         line_nr++;
-        parser.SetContent(line);
-
-        if (!parser.HasMoreTokens())
-            continue;
-
-        if (!running_goal) {
-            std::string type = parser.NextToken();
-
-            if (type == "var") {
-                std::cout << "Line " << line_nr << ": Ignoring var statement" << std::endl;
-                continue;
-            }
-
-            if (type != "goal") {
-                std::cout << "Line " << line_nr << ": Unknonw type " << type << std::endl;
-                break;    
-            }
-
-            if (!parser.HasMoreTokens()) {
-                std::cout << "Line " << line_nr << ": Expected identifier" << std::endl;
-                break;
-            }
-
-            std::string identifier = parser.NextToken();
-
-            if (!parser.HasMoreTokens() || parser.NextToken() != "{") {
-                std::cout << "Line " << line_nr << ": Expected {" << std::endl;
-                break;
-            }
-
-            if (identifier == m_goal_name)
-                running_target_goal = true;
-            
-            running_goal = true;
-        } else {
-            if (parser.NextToken() == "}") {
-                running_goal = false;
-
-                if (running_target_goal)
-                    break;
-
-                continue;
-            }
-            
-            if (running_target_goal)
-                std::cout << "Command: " << line << std::endl;
+        
+        try {
+            parser.ParseLine(line);
+        } catch (const char *error) {
+            std::cout << "Line " << line_nr << ": " << error << std::endl;
         }
     }
-
-    if (!running_target_goal)
-        std::cout << "Goal " << m_goal_name << " not found" << std::endl;
 
     file.close();
     return true;    

@@ -1,5 +1,66 @@
 #include <parse.hpp>
 
+SmplParser::SmplParser() {
+    m_parsing_goal = false;
+}
+
+SmplParser::~SmplParser() {
+
+}
+
+void SmplParser::ParseLine(std::string line) {
+    m_parser.SetContent(line);
+
+    if (!m_parser.HasMoreTokens())
+        return;
+
+    if (!m_parsing_goal) {
+        std::string type = m_parser.NextToken();
+
+        if (!m_parser.HasMoreTokens()) 
+            throw "Expected identifier";
+
+        std::string identifier = m_parser.NextToken();
+
+        if (type == "var") {
+            ParseVarLine(line);
+            return;
+        }
+
+        if (type == "goal") {
+            ParseGoalLine(line);
+            return;    
+        }
+
+        throw "Unknonw type " + type;
+    } else
+        ParseGoalContentLine();
+}
+
+void SmplParser::ParseVarLine(std::string identifier) {
+    if (!m_parser.HasMoreTokens() || m_parser.NextToken() != "=")
+        throw "Expected =";
+
+    // Parse...
+}
+
+void SmplParser::ParseGoalLine(std::string identifier) {
+    if (!m_parser.HasMoreTokens() || m_parser.NextToken() != "{")
+        throw "Expected {";
+
+    if (m_parser.HasMoreTokens())
+        throw "Expected line end";
+
+    m_parsing_goal = true;
+}
+
+void SmplParser::ParseGoalContentLine() {
+   if (m_parser.NextToken() == "}") {
+        m_parsing_goal = false;
+        return;
+   }
+}
+
 Parser::Parser() {
     m_content = "";
     m_index = 0;
