@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iostream>
 #include <parse.hpp>
+#include <stdexcept>
 
 SmplTarget::SmplTarget() {
     // Assign default values
@@ -29,7 +30,6 @@ void SmplTarget::ParseArgument(char *argument) {
 
         token_left += current_char;
     }
-
    
     if (index >= length) {
         // Test if file exists, otherwise use as goal name
@@ -51,6 +51,77 @@ void SmplTarget::ParseArgument(char *argument) {
 
     m_file_name = token_left;
     m_goal_name = token_right;
+}
+
+enum VarCalculationState {
+    READ_FREE,
+    COMMAND_SYMBOL_READ,
+    READ_COMMAND
+};
+
+std::string CalculateVariable(std::string value) {
+    std::string result = "";
+    VarCalculationState state = READ_FREE;
+    std::string command = "";
+    int para_count = 0;
+
+    for (size_t index = 0; index < value.length(); index++) {
+        char current_char = value.at(index);
+
+        switch (state) {
+            case READ_FREE:
+                if (current_char == '$') {
+                    state = COMMAND_SYMBOL_READ;
+                    break;
+                }
+
+                result += current_char;
+                break;
+            
+            case COMMAND_SYMBOL_READ:
+                if (current_char == '(') {
+                    state = READ_COMMAND;
+                    command = "";
+                    para_count = 1;
+                    break;
+                }
+
+                // $ was not for a command -> needs to be added into the result now
+                result += "$" + current_char;
+                state = READ_FREE;
+                break;
+
+            case READ_COMMAND:
+                if (current_char == '(')
+                    para_count++;
+                else if(current_char == ')') {
+                    para_count--;
+                    
+                    if (para_count == 0) {
+                        // TODO Command end -> Execute
+                        std::cout << "Sub-Command: " << command << std::endl;
+                        state = READ_FREE;
+                    }
+                } else
+                    command += current_char;
+                break;
+
+            default:
+                throw std::runtime_error(std::string("(Internal) Illegal state"));
+        }
+    }
+
+    // End of content
+    switch(state) {
+        case COMMAND_SYMBOL_READ:
+            result += "$";
+            break;
+
+        case READ_COMMAND:
+            throw std::runtime_error(std::string("Unfinished command"));
+    }
+
+    return result;
 }
 
 bool SmplTarget::Run() {
@@ -87,13 +158,12 @@ bool SmplTarget::Run() {
     if (error)
         return false;
 
-    for (SmplVariable variable : parser.GetVariables()) {
+    for (SmplVariable& variable : parser.GetVariables()) {
+        variable.m_value = CalculateVariable(variable.m_value);
         std::cout << "Variable " << variable.m_name << " -> " << variable.m_value << std::endl;
     }
 
     for (SmplGoal goal : parser.GetGoals()) {
-        //std::cout << "Goal : " << goal.m_name << std::endl;
-        
         if (goal.m_name == m_goal_name) {
             for (std::string command : goal.m_commands) {
                 std::cout << "Command: " << command << std::endl;

@@ -1,7 +1,7 @@
 #include <iostream>
 #include <target.hpp>
 
-int main(int argc, char** argv) {
+int Run(int argc, char** argv) {
     if (argc <= 1) {
         SmplTarget target;
         return !target.Run();
@@ -15,4 +15,16 @@ int main(int argc, char** argv) {
     }
 
     return !result;
+}
+
+int main(int argc, char** argv) {
+    try {
+        return Run(argc, argv);
+    } catch (const std::runtime_error& exception) {
+        std::cout << "(Internal) Error: " << exception.what() << std::endl;
+    } catch (...) {
+        std::cout << "(Internal) Uknown exception" << std::endl;
+    }
+
+    return -1;
 }
