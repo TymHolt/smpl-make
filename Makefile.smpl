@@ -1,5 +1,5 @@
 # A comment
-# $(...) -> smpl-make utility commands
+# $(...) -> smpl-make utility macros
 # all [match] -> All files in directory
 # all-recursive [match] -> All files in directory and sub-directories
 

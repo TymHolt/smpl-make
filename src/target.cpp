@@ -4,6 +4,7 @@
 #include <iostream>
 #include <parse.hpp>
 #include <stdexcept>
+#include <macro.hpp>
 
 SmplTarget::SmplTarget() {
     // Assign default values
@@ -55,14 +56,14 @@ void SmplTarget::ParseArgument(char *argument) {
 
 enum VarCalculationState {
     READ_FREE,
-    COMMAND_SYMBOL_READ,
-    READ_COMMAND
+    MACRO_SYMBOL_READ,
+    READ_MACRO
 };
 
 std::string CalculateVariable(std::string value) {
     std::string result = "";
     VarCalculationState state = READ_FREE;
-    std::string command = "";
+    std::string macro = "";
     int para_count = 0;
 
     for (size_t index = 0; index < value.length(); index++) {
@@ -71,39 +72,38 @@ std::string CalculateVariable(std::string value) {
         switch (state) {
             case READ_FREE:
                 if (current_char == '$') {
-                    state = COMMAND_SYMBOL_READ;
+                    state = MACRO_SYMBOL_READ;
                     break;
                 }
 
                 result += current_char;
                 break;
             
-            case COMMAND_SYMBOL_READ:
+            case MACRO_SYMBOL_READ:
                 if (current_char == '(') {
-                    state = READ_COMMAND;
-                    command = "";
+                    state = READ_MACRO;
+                    macro = "";
                     para_count = 1;
                     break;
                 }
 
-                // $ was not for a command -> needs to be added into the result now
+                // $ was not for a macro -> needs to be added into the result now
                 result += "$" + current_char;
                 state = READ_FREE;
                 break;
 
-            case READ_COMMAND:
+            case READ_MACRO:
                 if (current_char == '(')
                     para_count++;
                 else if(current_char == ')') {
                     para_count--;
                     
                     if (para_count == 0) {
-                        // TODO Command end -> Execute
-                        std::cout << "Sub-Command: " << command << std::endl;
+                        result += Macro::RunMacro(macro);
                         state = READ_FREE;
                     }
                 } else
-                    command += current_char;
+                    macro += current_char;
                 break;
 
             default:
@@ -113,12 +113,12 @@ std::string CalculateVariable(std::string value) {
 
     // End of content
     switch(state) {
-        case COMMAND_SYMBOL_READ:
+        case MACRO_SYMBOL_READ:
             result += "$";
             break;
 
-        case READ_COMMAND:
-            throw std::runtime_error(std::string("Unfinished command"));
+        case READ_MACRO:
+            throw std::runtime_error(std::string("Unfinished macro"));
     }
 
     return result;
