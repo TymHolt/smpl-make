@@ -241,14 +241,14 @@ bool SmplTarget::Run() {
     std::vector<SmplVariable> variables = parser.GetVariables();
     for (SmplVariable& variable : variables) {
         variable.m_value = CalculateVariable(variable.m_value);
-        std::cout << "Variable " << variable.m_name << " -> " << variable.m_value << std::endl;
     }
 
     for (SmplGoal goal : parser.GetGoals()) {
         if (goal.m_name == m_goal_name) {
             for (std::string command : goal.m_commands) {
                 std::string applied_command = ApplyVariables(command, variables);
-                std::cout << "Command: " << applied_command << std::endl;
+                std::cout << applied_command << std::endl;
+                system(applied_command.c_str());
             }
 
             return true;
