@@ -55,14 +55,14 @@ void SmplTarget::ParseArgument(char *argument) {
 }
 
 enum VarCalculationState {
-    READ_FREE,
-    MACRO_SYMBOL_READ,
-    READ_MACRO
+    VCS_READ_FREE,
+    VCS_MACRO_SYMBOL_READ,
+    VCS_READ_MACRO
 };
 
 std::string CalculateVariable(std::string value) {
     std::string result = "";
-    VarCalculationState state = READ_FREE;
+    VarCalculationState state = VCS_READ_FREE;
     std::string macro = "";
     int para_count = 0;
 
@@ -70,18 +70,18 @@ std::string CalculateVariable(std::string value) {
         char current_char = value.at(index);
 
         switch (state) {
-            case READ_FREE:
+            case VCS_READ_FREE:
                 if (current_char == '$') {
-                    state = MACRO_SYMBOL_READ;
+                    state = VCS_MACRO_SYMBOL_READ;
                     break;
                 }
 
                 result += current_char;
                 break;
             
-            case MACRO_SYMBOL_READ:
+            case VCS_MACRO_SYMBOL_READ:
                 if (current_char == '(') {
-                    state = READ_MACRO;
+                    state = VCS_READ_MACRO;
                     macro = "";
                     para_count = 1;
                     break;
@@ -89,10 +89,10 @@ std::string CalculateVariable(std::string value) {
 
                 // $ was not for a macro -> needs to be added into the result now
                 result += "$" + current_char;
-                state = READ_FREE;
+                state = VCS_READ_FREE;
                 break;
 
-            case READ_MACRO:
+            case VCS_READ_MACRO:
                 if (current_char == '(')
                     para_count++;
                 else if(current_char == ')') {
@@ -100,7 +100,7 @@ std::string CalculateVariable(std::string value) {
                     
                     if (para_count == 0) {
                         result += Macro::RunMacro(macro);
-                        state = READ_FREE;
+                        state = VCS_READ_FREE;
                     }
                 } else
                     macro += current_char;
@@ -113,12 +113,92 @@ std::string CalculateVariable(std::string value) {
 
     // End of content
     switch(state) {
-        case MACRO_SYMBOL_READ:
+        case VCS_MACRO_SYMBOL_READ:
             result += "$";
             break;
 
-        case READ_MACRO:
+        case VCS_READ_MACRO:
             throw std::runtime_error(std::string("Unfinished macro"));
+    }
+
+    return result;
+}
+
+enum ApplyVarState {
+    AVS_READ_FREE,
+    AVS_VAR_SYMBOL_READ,
+    AVS_READ_VAR
+};
+
+std::string ApplyVariables(std::string command, std::vector<SmplVariable> variables) {
+    std::string result = "";
+    ApplyVarState state = AVS_READ_FREE;
+    std::string var_name = "";
+    int para_count = 0;
+
+    for (size_t index = 0; index < command.length(); index++) {
+        char current_char = command.at(index);
+
+        switch (state) {
+            case AVS_READ_FREE:
+                if (current_char == '%') {
+                    state = AVS_VAR_SYMBOL_READ;
+                    break;
+                }
+
+                result += current_char;
+                break;
+            
+            case AVS_VAR_SYMBOL_READ:
+                if (current_char == '(') {
+                    state = AVS_READ_VAR;
+                    var_name = "";
+                    para_count = 1;
+                    break;
+                }
+
+                // % was not for a var -> needs to be added into the result now
+                result += "%" + current_char;
+                state = AVS_READ_FREE;
+                break;
+
+            case AVS_READ_VAR:
+                if (current_char == '(')
+                    para_count++;
+                else if(current_char == ')') {
+                    para_count--;
+                    
+                    if (para_count == 0) {
+                        state = AVS_READ_FREE;
+                        bool found = false;
+
+                        for (SmplVariable variable : variables) {
+                            if (variable.m_name == var_name) {
+                                result += variable.m_value;
+                                found = true;
+                            }
+                        }
+
+                        if (!found)
+                            throw std::runtime_error(std::string("Unknown variable") + var_name);
+                    }
+                } else
+                    var_name += current_char;
+                break;
+
+            default:
+                throw std::runtime_error(std::string("(Internal) Illegal state"));
+        }
+    }
+
+    // End of content
+    switch(state) {
+        case AVS_VAR_SYMBOL_READ:
+            result += "$";
+            break;
+
+        case AVS_READ_VAR:
+            throw std::runtime_error(std::string("Unfinished var name"));
     }
 
     return result;
@@ -157,8 +237,9 @@ bool SmplTarget::Run() {
 
     if (error)
         return false;
-
-    for (SmplVariable& variable : parser.GetVariables()) {
+  
+    std::vector<SmplVariable> variables = parser.GetVariables();
+    for (SmplVariable& variable : variables) {
         variable.m_value = CalculateVariable(variable.m_value);
         std::cout << "Variable " << variable.m_name << " -> " << variable.m_value << std::endl;
     }
@@ -166,7 +247,8 @@ bool SmplTarget::Run() {
     for (SmplGoal goal : parser.GetGoals()) {
         if (goal.m_name == m_goal_name) {
             for (std::string command : goal.m_commands) {
-                std::cout << "Command: " << command << std::endl;
+                std::string applied_command = ApplyVariables(command, variables);
+                std::cout << "Command: " << applied_command << std::endl;
             }
 
             return true;

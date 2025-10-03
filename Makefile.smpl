@@ -9,11 +9,10 @@ var src_files = $(all-recursive *.cpp)
 # Main goal is excuted if no goal is specified
 goal main {
     # Use vars using %
-    # To use the % character in a command, use %%
-    gcc -Isrc %src_files -o smplmake 
+    gcc -Isrc %(src_files) -o smplmake 
 }
 
 # This goald must be specified to be executed
 goal release {
-    gcc -Isrc %c_files -o bake -mtune=generic -march=x86-64
+    gcc -Isrc %(c_files) -o bake -mtune=generic -march=x86-64
 }
