@@ -47,11 +47,11 @@ How to write an example Makefile.smpl
 ```
 # A comment
 # $(...) -> smpl-make utility macros
-# all [match] -> All files in directory
 # all-recursive [match] -> All files in directory and sub-directories
 
 # vars are initialized before executing goals
-var src_files = $(all-recursive *.cpp)
+# Macros match using regex
+var src_files = $(all-recursive .*\.cpp)
 
 # Main goal is excuted if no goal is specified
 goal main {

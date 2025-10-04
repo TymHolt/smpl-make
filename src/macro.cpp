@@ -2,6 +2,7 @@
 #include <parse.hpp>
 #include <stdexcept>
 #include <filesystem>
+#include <regex>
 
 bool EndsWith(std::string string, std::string suffix) {
     return string.size() >= suffix.size() && 
@@ -9,8 +10,8 @@ bool EndsWith(std::string string, std::string suffix) {
 }
 
 bool MatchPath(std::string path, std::string argument) {
-    // TODO real matching
-    return argument == "*.cpp" && EndsWith(path, std::string(".cpp"));
+    std::regex expression(argument);
+    return std::regex_match(path, expression);
 }
 
 std::string RunMacroAllRecursive(std::string argument) {
