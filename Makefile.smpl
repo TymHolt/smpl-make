@@ -12,7 +12,33 @@ goal main {
     g++ -Isrc %(src_files) -o smplmake 
 }
 
+var release_name = smplmake
+var release_version = 0.1.0
+
 # This goald must be specified to be executed
 goal release {
+    # Compile
     g++ -Isrc %(src_files) -o smplmake -mtune=generic -march=x86-64
+    
+    # Create dpkg dir
+    mkdir %(release_name)_%(release_version)
+    
+    # Put binary
+    mkdir %(release_name)_%(release_version)/usr
+    mkdir %(release_name)_%(release_version)/usr/local
+    mkdir %(release_name)_%(release_version)/usr/local/bin
+    cp smplmake %(release_name)_%(release_version)/usr/local/bin
+    
+    # Put control
+    mkdir %(release_name)_%(release_version)/DEBIAN
+    echo Package: %(release_name) >> %(release_name)_%(release_version)/DEBIAN/control
+    echo Version: %(release_version) >> %(release_name)_%(release_version)/DEBIAN/control
+    echo Section: base >> %(release_name)_%(release_version)/DEBIAN/control
+    echo Priority: optional >> %(release_name)_%(release_version)/DEBIAN/control
+    echo Architecture: amd64 >> %(release_name)_%(release_version)/DEBIAN/control
+    echo Maintainer: "Tim Holtkötter <timholtkoetter.com@gmail.com>" >> %(release_name)_%(release_version)/DEBIAN/control
+    echo Description: A simple build system >> %(release_name)_%(release_version)/DEBIAN/control
+    
+    # Build dpkg
+    dpkg-deb --build %(release_name)_%(release_version)
 }
