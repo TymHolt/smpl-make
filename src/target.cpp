@@ -1,10 +1,11 @@
-#include <target.hpp>
+#include "target.hpp"
 #include <string.h>
 #include <fstream>
 #include <iostream>
-#include <parse.hpp>
 #include <stdexcept>
-#include <macro.hpp>
+#include "parse.hpp"
+#include "macro.hpp"
+#include "command.hpp"
 
 SmplTarget::SmplTarget() {
     // Assign default values
@@ -124,86 +125,6 @@ std::string CalculateVariable(std::string value) {
     return result;
 }
 
-enum ApplyVarState {
-    AVS_READ_FREE,
-    AVS_VAR_SYMBOL_READ,
-    AVS_READ_VAR
-};
-
-std::string ApplyVariables(std::string command, std::vector<SmplVariable> variables) {
-    std::string result = "";
-    ApplyVarState state = AVS_READ_FREE;
-    std::string var_name = "";
-    int para_count = 0;
-
-    for (size_t index = 0; index < command.length(); index++) {
-        char current_char = command.at(index);
-
-        switch (state) {
-            case AVS_READ_FREE:
-                if (current_char == '%') {
-                    state = AVS_VAR_SYMBOL_READ;
-                    break;
-                }
-
-                result += current_char;
-                break;
-            
-            case AVS_VAR_SYMBOL_READ:
-                if (current_char == '(') {
-                    state = AVS_READ_VAR;
-                    var_name = "";
-                    para_count = 1;
-                    break;
-                }
-
-                // % was not for a var -> needs to be added into the result now
-                result += "%" + current_char;
-                state = AVS_READ_FREE;
-                break;
-
-            case AVS_READ_VAR:
-                if (current_char == '(')
-                    para_count++;
-                else if(current_char == ')') {
-                    para_count--;
-                    
-                    if (para_count == 0) {
-                        state = AVS_READ_FREE;
-                        bool found = false;
-
-                        for (SmplVariable variable : variables) {
-                            if (variable.m_name == var_name) {
-                                result += variable.m_value;
-                                found = true;
-                            }
-                        }
-
-                        if (!found)
-                            throw std::runtime_error(std::string("Unknown variable") + var_name);
-                    }
-                } else
-                    var_name += current_char;
-                break;
-
-            default:
-                throw std::runtime_error(std::string("(Internal) Illegal state"));
-        }
-    }
-
-    // End of content
-    switch(state) {
-        case AVS_VAR_SYMBOL_READ:
-            result += "$";
-            break;
-
-        case AVS_READ_VAR:
-            throw std::runtime_error(std::string("Unfinished var name"));
-    }
-
-    return result;
-}
-
 bool SmplTarget::Run() {
     std::cout << "Running goal " << m_file_name << ":" << m_goal_name << std::endl;
 
@@ -238,17 +159,19 @@ bool SmplTarget::Run() {
     if (error)
         return false;
   
+    smpl::ExecutionContext executionContext;
+    executionContext.SetExecutionDirectory("");
+
     std::vector<SmplVariable> variables = parser.GetVariables();
     for (SmplVariable& variable : variables) {
         variable.m_value = CalculateVariable(variable.m_value);
+        executionContext.AddVariable(variable.m_name, variable.m_value);
     }
 
     for (SmplGoal goal : parser.GetGoals()) {
         if (goal.m_name == m_goal_name) {
-            for (std::string command : goal.m_commands) {
-                std::string applied_command = ApplyVariables(command, variables);
-                std::cout << applied_command << std::endl;
-                system(applied_command.c_str());
+            for (smpl::ICommand *command : goal.m_commands) {
+                command->Execute(&executionContext);
             }
 
             return true;

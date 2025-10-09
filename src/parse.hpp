@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include "command.hpp"
 
 class Parser {
     private:
@@ -25,7 +26,7 @@ typedef struct SmplVariableStruct {
 
 typedef struct SmplGoalStruct {
     std::string m_name;
-    std::vector<std::string> m_commands;
+    std::vector<smpl::ICommand *> m_commands;
 } SmplGoal;
 
 class SmplParser {

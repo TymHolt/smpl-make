@@ -6,7 +6,10 @@ SmplParser::SmplParser() {
 }
 
 SmplParser::~SmplParser() {
-
+    for (SmplGoal goal : m_goals) {
+        for (smpl::ICommand *command : goal.m_commands)
+            delete command;
+    }
 }
 
 void SmplParser::ParseLine(std::string line) {
@@ -78,7 +81,9 @@ void SmplParser::ParseGoalContentLine() {
         return;
    }
 
-   m_current_goal.m_commands.push_back(m_parser.GetRemaining());
+   std::string raw_command = m_parser.GetRemaining();
+   smpl::SystemCommand *systemCommand = new smpl::SystemCommand(raw_command);
+   m_current_goal.m_commands.push_back(systemCommand);
 }
 
 std::vector<SmplVariable> SmplParser::GetVariables() {

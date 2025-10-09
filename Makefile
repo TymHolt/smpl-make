@@ -1,4 +1,4 @@
-core_files = src/main.cpp src/target.cpp src/parse.cpp src/macro.cpp
+core_files = src/main.cpp src/target.cpp src/parse.cpp src/macro.cpp command.cpp
 src_cpp_files = $(core_files)
 
 smplmake: $(src_cpp_files)
