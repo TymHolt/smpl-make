@@ -27,7 +27,7 @@ namespace smpl {
     class ICommand {
         public:
             ICommand();
-            virtual int Execute(ExecutionContext* context);
+            virtual int Execute(ExecutionContext *context);
     };
 
     class SystemCommand : public ICommand {
@@ -35,7 +35,15 @@ namespace smpl {
             std::string m_raw_command;
         public:
             SystemCommand(std::string raw_command = "");
-            virtual int Execute(ExecutionContext* context);
+            virtual int Execute(ExecutionContext *context);
+    };
+
+    class ChangeDirectoryCommand : public ICommand {
+        private:
+            std::string m_directory_path;
+        public:
+            ChangeDirectoryCommand(std::string directory_path = "");
+            virtual int Execute(ExecutionContext *context);
     };
 }
 

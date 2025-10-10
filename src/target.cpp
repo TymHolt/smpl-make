@@ -162,10 +162,9 @@ bool SmplTarget::Run() {
     smpl::ExecutionContext executionContext;
     executionContext.SetExecutionDirectory("");
 
-    std::vector<SmplVariable> variables = parser.GetVariables();
-    for (SmplVariable& variable : variables) {
-        variable.m_value = CalculateVariable(variable.m_value);
-        executionContext.AddVariable(variable.m_name, variable.m_value);
+    for (SmplVariable variable : parser.GetVariables()) {
+        std::string value = CalculateVariable(variable.m_value);
+        executionContext.AddVariable(variable.m_name, value);
     }
 
     for (SmplGoal goal : parser.GetGoals()) {

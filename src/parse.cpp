@@ -75,15 +75,24 @@ void SmplParser::ParseGoalLine(std::string identifier) {
 }
 
 void SmplParser::ParseGoalContentLine() {
-   if (m_parser.PeekToken() == "}") {
+    if (m_parser.PeekToken() == "}") {
         m_parsing_goal = false;
         m_goals.push_back(m_current_goal);
         return;
-   }
+    }
 
-   std::string raw_command = m_parser.GetRemaining();
-   smpl::SystemCommand *systemCommand = new smpl::SystemCommand(raw_command);
-   m_current_goal.m_commands.push_back(systemCommand);
+    if (m_parser.PeekNonWhitespaceChar() == '@') {
+        m_parser.SkipAfterChar('@');
+        
+        std::string directory_path = m_parser.GetRemaining();
+        smpl::ChangeDirectoryCommand *command = new smpl::ChangeDirectoryCommand(directory_path);
+        m_current_goal.m_commands.push_back(command);
+        return;
+    }
+
+    std::string raw_command = m_parser.GetRemaining();
+    smpl::SystemCommand *system_command = new smpl::SystemCommand(raw_command);
+    m_current_goal.m_commands.push_back(system_command);
 }
 
 std::vector<SmplVariable> SmplParser::GetVariables() {
@@ -114,12 +123,12 @@ bool IsWhiteSpace(char c) {
 
 bool Parser::HasMoreTokens() {
     for (size_t index = m_index; index < m_content.length(); index++) {
-        const char currentChar = m_content.at(index);
+        const char current_char = m_content.at(index);
         
-        if (currentChar == '#')
+        if (current_char == '#')
             return false;
 
-        if (!IsWhiteSpace(currentChar))
+        if (!IsWhiteSpace(current_char))
             return true;
     }
 
@@ -128,30 +137,30 @@ bool Parser::HasMoreTokens() {
 
 std::string Parser::NextToken() {
     std::string token = "";
-    bool parseBegin = false;
+    bool parse_begin = false;
 
     for (; m_index < m_content.length(); m_index++) {
-        const char currentChar = m_content.at(m_index);
+        const char current_char = m_content.at(m_index);
 
-        if (currentChar == '#') {
+        if (current_char == '#') {
             // Prevent interpreting the comment with another call
             m_index = m_content.length();
             break;
         }
 
-        if (!parseBegin) {
-            if (!IsWhiteSpace(currentChar)) {
-                parseBegin = true;
+        if (!parse_begin) {
+            if (!IsWhiteSpace(current_char)) {
+                parse_begin = true;
                 m_index--;
             }
 
             continue;
         }
 
-        if (IsWhiteSpace(currentChar))
+        if (IsWhiteSpace(current_char))
             break;
 
-        token += currentChar;
+        token += current_char;
     }
 
     return token;
@@ -159,55 +168,77 @@ std::string Parser::NextToken() {
 
 std::string Parser::PeekToken() {
     std::string token = "";
-    bool parseBegin = false;
+    bool parse_begin = false;
 
     for (size_t index = m_index; index < m_content.length(); index++) {
-        const char currentChar = m_content.at(index);
+        const char current_char = m_content.at(index);
 
-        if (currentChar == '#')
+        if (current_char == '#')
             break;
 
-        if (!parseBegin) {
-            if (!IsWhiteSpace(currentChar)) {
-                parseBegin = true;
+        if (!parse_begin) {
+            if (!IsWhiteSpace(current_char)) {
+                parse_begin = true;
                 index--;
             }
 
             continue;
         }
 
-        if (IsWhiteSpace(currentChar))
+        if (IsWhiteSpace(current_char))
             break;
 
-        token += currentChar;
+        token += current_char;
     }
 
     return token;
 }
 
+char Parser::PeekNonWhitespaceChar() {
+     for (size_t index = m_index; index < m_content.length(); index++) {
+        const char current_char = m_content.at(index);
+        
+        if (!IsWhiteSpace(current_char))
+            return current_char;
+    }
+
+    return 0;
+}
+
+void Parser::SkipAfterChar(char c) {
+    for (; m_index < m_content.length(); m_index++) {
+        const char current_char = m_content.at(m_index);
+        
+        if (current_char == c) {
+            m_index++; // Skip this char also
+            return;
+        }
+    }    
+}
+
 std::string Parser::GetRemaining() {
     std::string result = "";
-    bool whitespaceSkippped = false;
+    bool whitespace_skippped = false;
 
     for (; m_index < m_content.length(); m_index++) {
-        const char currentChar = m_content.at(m_index);
+        const char current_char = m_content.at(m_index);
 
-        if (currentChar == '#') {
+        if (current_char == '#') {
             // Prevent interpreting the comment with another call
             m_index = m_content.length();
             break;
         }
 
-        if (!whitespaceSkippped) {
-            if (!IsWhiteSpace(currentChar)) {
-                whitespaceSkippped = true;
+        if (!whitespace_skippped) {
+            if (!IsWhiteSpace(current_char)) {
+                whitespace_skippped = true;
                 m_index--;
             }
 
             continue;
         }
 
-        result += currentChar;
+        result += current_char;
     }
 
     return result;

@@ -16,6 +16,8 @@ class Parser {
         bool HasMoreTokens();
         std::string NextToken();
         std::string PeekToken();
+        char PeekNonWhitespaceChar();
+        void SkipAfterChar(char c);
         std::string GetRemaining();
 };
 
