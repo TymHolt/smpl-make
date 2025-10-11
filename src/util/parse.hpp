@@ -5,6 +5,12 @@
 #include <vector>
 #include "command.hpp"
 
+namespace util {
+    
+    void SplitAtChar(std::string string, char split_char, std::string *part_left,
+        std::string *part_right);
+}
+
 class Parser {
     private:
         std::string m_content;

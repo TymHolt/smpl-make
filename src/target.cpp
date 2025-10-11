@@ -1,58 +1,18 @@
-#include "target.hpp"
-#include <string.h>
+#include <target.hpp>
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
-#include "parse.hpp"
-#include "macro.hpp"
-#include "command.hpp"
+#include <util/parse.hpp>
+#include <macro.hpp>
+#include <command.hpp>
 
-SmplTarget::SmplTarget() {
-    // Assign default values
-    m_file_name = "Makefile.smpl";
-    m_goal_name = "main";
+SmplTarget::SmplTarget(std::string file_name, std::string goal_name) {
+    m_file_name = file_name;
+    m_goal_name = goal_name;
 }
 
 SmplTarget::~SmplTarget() {
 
-}
-
-void SmplTarget::ParseArgument(char *argument) {
-    std::string token_left = "";
-    size_t index = 0;
-    size_t length = strlen(argument);
-
-    for (; index < length; index++) {
-        char current_char = argument[index];
-    
-        if (current_char == ':') {
-            index++;
-            break;
-        }
-
-        token_left += current_char;
-    }
-   
-    if (index >= length) {
-        // Test if file exists, otherwise use as goal name
-        std::fstream file(token_left);
-        if (file.is_open()) {
-            m_file_name = token_left;
-            file.close();
-        } else
-            m_goal_name = token_left;
-        
-        return;
-    }
-
-    std::string token_right = "";
-    for (; index < length; index++) {
-        char current_char = argument[index];
-        token_right += current_char;
-    }
-
-    m_file_name = token_left;
-    m_goal_name = token_right;
 }
 
 enum VarCalculationState {

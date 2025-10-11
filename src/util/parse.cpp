@@ -1,5 +1,31 @@
-#include <parse.hpp>
 #include <stdexcept>
+#include <string>
+#include <util/parse.hpp>
+
+std::string ReadUntilAfter(std::string string, char split_char, size_t *index) {
+    std::string result = "";
+
+    for (; *index < string.length(); (*index)++) {
+        char current_char = string.at(*index);
+
+        if (current_char == split_char) {
+            (*index)++;
+            break;
+        }
+
+        result += current_char;
+    }
+
+    return result;
+}
+
+void util::SplitAtChar(std::string string, char split_char, std::string *part_left,
+    std::string *part_right) {
+    
+    size_t index = 0;
+    *part_left = ReadUntilAfter(string, split_char, &index);
+    *part_right = ReadUntilAfter(string, split_char, &index);
+}
 
 SmplParser::SmplParser() {
     m_parsing_goal = false;

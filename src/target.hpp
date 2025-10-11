@@ -8,9 +8,8 @@ class SmplTarget {
         std::string m_file_name;
         std::string m_goal_name;
     public:
-        SmplTarget();
+        SmplTarget(std::string file_name = "", std::string goal_name = "");
         ~SmplTarget();
-        void ParseArgument(char *argument);
         bool Run();
         std::string GetFileName();
         std::string GetGoalName();
