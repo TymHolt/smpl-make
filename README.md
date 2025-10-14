@@ -19,7 +19,7 @@ or
 
 > smplmake
 
-to get an executable file, depending which build system you want to use. Of course it is intended that *smpl-make* is used for building itself.
+to get an executable file, depending which build system you want to use. Of course it is intended that *smpl-make* is used for building itself. Using the goal *release* you can create a package for installation. Using the goal *gnu-makefile* you can create a *GNU Makefile* for building this project.
 
 ## Usage
 

@@ -1,8 +1,7 @@
-core_files = src/main.cpp src/target.cpp src/parse.cpp src/macro.cpp command.cpp
-src_cpp_files = $(core_files)
+cpp_files = ./src/target.cpp ./src/util/file.cpp ./src/util/parse.cpp ./src/macro.cpp ./src/main.cpp ./src/command.cpp ./src/core_classes.cpp 
 
-smplmake: $(src_cpp_files)
-	g++ -Isrc $(src_cpp_files) -o smplmake
+smplmake: $(cpp_files)
+	g++ -Isrc $(cpp_files) -o smplmake
 
 clean:
 	rm smplmake

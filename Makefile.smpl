@@ -1,21 +1,12 @@
-# A comment
-# $(...) -> smpl-make utility macros
-# all-recursive [match] -> All files in directory and sub-directories
-
-# vars are initialized before executing goals
-# Macros match using regex
 var src_files = $(all-recursive .*\.cpp)
 
-# Main goal is excuted if no goal is specified
 goal main {
-    # Use vars using %
     g++ -Isrc %(src_files) -o smplmake 
 }
 
 var release_name = smplmake
 var release_version = 0.1.0
 
-# This goal must be specified to be executed
 goal release {
     # Compile
     g++ -Isrc %(src_files) -o smplmake -mtune=generic -march=x86-64
@@ -41,4 +32,22 @@ goal release {
     
     # Build dpkg
     dpkg-deb --build %(release_name)_%(release_version)
+}
+
+var makefile_name = Makefile
+
+goal gnu-makefile {
+    # > Overwrites file, >> appends
+
+    echo "cpp_files = %(src_files)" > %(makefile_name)
+
+    echo "" >> %(makefile_name)
+
+    echo "smplmake: \$(cpp_files)" >> %(makefile_name)
+    echo "\tg++ -Isrc \$(cpp_files) -o smplmake" >> %(makefile_name)
+
+    echo "" >> %(makefile_name)
+    
+    echo "clean:" >> %(makefile_name)
+    echo "\trm smplmake" >> %(makefile_name)
 }
