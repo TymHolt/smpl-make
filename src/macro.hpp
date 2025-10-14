@@ -4,6 +4,7 @@
 #include <string>
 
 namespace Macro {
+    
     std::string RunMacro(std::string macro);
 }
 

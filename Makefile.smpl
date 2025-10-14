@@ -15,7 +15,7 @@ goal main {
 var release_name = smplmake
 var release_version = 0.1.0
 
-# This goald must be specified to be executed
+# This goal must be specified to be executed
 goal release {
     # Compile
     g++ -Isrc %(src_files) -o smplmake -mtune=generic -march=x86-64

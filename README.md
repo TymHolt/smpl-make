@@ -10,16 +10,16 @@ A simple way to compile and/or build projects. *smpl-make* aims to provide tools
 
 If you are on a *Debian* based system, head over to the releases of this project. There will be .deb packages ready to install.
 
- **Build**
- You need the *g++* compiler available on your system. This project can build itself or can build using *Make*. Simply run
- 
- > make
- 
- or
+### Build
+You need the *g++* compiler available on your system. This project can build itself or can build using *Make*. Simply run
+
+> make
+
+or
 
 > smplmake
 
- to get an executable file, depending which build system you want to use. Of course it is intended that *smpl-make* is used for building itself.
+to get an executable file, depending which build system you want to use. Of course it is intended that *smpl-make* is used for building itself.
 
 ## Usage
 
@@ -43,7 +43,6 @@ To execute a specific goal in a specific file, you can use the following (withou
 
 How to write an example Makefile.smpl
 
-
 ```
 # A comment
 # $(...) -> smpl-make utility macros
@@ -59,7 +58,7 @@ goal main {
 	g++ -Isrc %(src_files) -o smplmake
 }
 
-# This goald must be specified to be executed
+# This goal must be specified to be executed
 goal release {
 	g++ -Isrc %(src_files) -o smplmake -mtune=generic -march=x86-64
 }
