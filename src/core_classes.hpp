@@ -59,10 +59,35 @@ namespace smpl {
             std::vector<Variable> m_variables;
             std::vector<Goal> m_goals;
         public:
-            File(std::string file_name = "", std::vector<Line> lines = {});
+            File(std::string file_name = "", std::vector<Variable> variables = {}, 
+                std::vector<Goal> goals = {});
             std::string GetName();
             std::vector<Variable> Variables();
             std::vector<Goal> GetGoals();
+    };
+
+    class FileConverter {
+        private:
+            std::vector<Variable> m_variables;
+            std::vector<Goal> m_goals;
+
+            std::string m_goal_name;
+            bool m_in_goal_block;
+            std::vector<Command> m_goal_commands;
+
+            void HandleVarLine(Line line);
+            void HandleGoalBeginLine(Line line);
+            void HandleGoalEndLine(Line line);
+            void HandleSysCommandLine(Line line);
+            void HandleCdCommandLine(Line line);
+            
+            bool ContainsVariable(std::string name);
+            bool ContainsGoal(std::string name);
+            void AddVariable(std::string name, std::string value);
+            void AddGoal(std::string name, std::vector<Command> commands);
+        public:
+            FileConverter();
+            File Convert(std::string file_name, std::vector<Line> lines);
     };
 
     class Context {
