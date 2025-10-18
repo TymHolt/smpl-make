@@ -1,7 +1,6 @@
 #include <iostream>
 #include <vector>
 #include <core_classes.hpp>
-#include <target.hpp>
 
 std::vector<smpl::Target> ParseTargetsFromArguments(int argc, char **argv) {
     std::vector<smpl::Target> targets;
@@ -26,12 +25,9 @@ int Run(int argc, char **argv) {
     bool result = true;
 
     std::vector<smpl::Target> targets = ParseTargetsFromArguments(argc, argv);
-    for (smpl::Target target : targets) {
-        SmplTarget legacy_target(target.GetFileName(), target.GetGoalName());
-        result = result && legacy_target.Run();
-    }
+    smpl::Context context(targets);
 
-    return result ? 0 : -1;
+    return context.RunAll() ? 0 : -1;
 }
 
 int main(int argc, char **argv) {

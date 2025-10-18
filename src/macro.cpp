@@ -1,5 +1,5 @@
 #include <macro.hpp>
-#include <util/parse.hpp>
+#include <util/string_parsing.hpp>
 #include <stdexcept>
 #include <filesystem>
 #include <regex>
@@ -26,11 +26,11 @@ std::string RunMacroAllRecursive(std::string argument) {
 }
 
 std::string Macro::RunMacro(std::string macro) {
-    Parser parser;
-    parser.SetContent(macro);
+    util::StringParser string_parser;
+    string_parser.SetContent(macro);
 
-    std::string macro_name = parser.NextToken();
-    std::string macro_argument = parser.GetRemaining();
+    std::string macro_name = string_parser.NextToken();
+    std::string macro_argument = string_parser.GetRemaining();
     
     if (macro_name == "all-recursive")
         return RunMacroAllRecursive(macro_argument);

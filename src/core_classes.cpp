@@ -1,5 +1,5 @@
 #include <stdexcept>
-#include <util/parse.hpp>
+#include <util/string_parsing.hpp>
 #include <util/file.hpp>
 #include <core_classes.hpp>
 
@@ -52,9 +52,24 @@ std::string smpl::Variable::GetValue() {
     return m_value;
 }
 
+// ---------- Command ----------
+
+smpl::Command::Command(CommandType type, std::string value) {
+    m_type = type;
+    m_value = value;
+}
+
+smpl::CommandType smpl::Command::GetType() {
+    return m_type;
+}
+
+std::string smpl::Command::GetValue() {
+    return m_value;
+}
+
 // ---------- Goal ----------
 
-smpl::Goal::Goal(std::string name, std::vector<smpl::ICommand *> commands) {
+smpl::Goal::Goal(std::string name, std::vector<Command> commands) {
     m_name = name;
     m_commands = commands;
 }
@@ -63,14 +78,16 @@ std::string smpl::Goal::GetName() {
     return m_name;
 }
 
-std::vector<smpl::ICommand *> smpl::Goal::GetCommands() {
+std::vector<smpl::Command> smpl::Goal::GetCommands() {
     return m_commands;
 }
 
 // ---------- File ----------
 
-smpl::File::File(std::string file_name) {
+smpl::File::File(std::string file_name, std::vector<Line> lines) {
     m_name = file_name;
+
+    // TODO Turn lines into objects
 }
 
 std::string smpl::File::GetName() {
@@ -85,129 +102,44 @@ std::vector<smpl::Goal> smpl::File::GetGoals() {
     return m_goals;
 }
 
-// ---------- ExecutionContext ----------
+// ---------- Context ----------
 
-smpl::ExecutionContext::ExecutionContext() {
-    m_execution_directory = "";
+smpl::Context::Context(std::vector<Target> targets) {
+    m_targets = targets;
+    m_files = {};
+
+    for (Target target : m_targets) {
+        std::string file_name = target.GetFileName();
+
+        if (HasFileLoaded(file_name))
+            continue;
+
+        if (!util::FileExists(file_name))
+            throw std::runtime_error(std::string("File " + file_name + " does not exist"));
+
+        std::string file_source = util::LoadTextFile(file_name);
+        
+        smpl::FileParser file_parser;
+        std::vector<smpl::Line> parsed_lines = file_parser.Parse(file_source);
+        
+        File file(file_name, parsed_lines);
+        m_files.push_back(file);
+    }
 }
 
-void smpl::ExecutionContext::SetExecutionDirectory(std::string execution_directory) {
-    m_execution_directory = execution_directory;
-}
-
-void smpl::ExecutionContext::AddVariable(std::string name, std::string value) {
-    if (ContainsVariable(name))
-        throw std::runtime_error(std::string("Variable " + name + " already defined"));
-
-    Variable variable(name, value);
-    m_variables.push_back(variable);
-}
-
-bool smpl::ExecutionContext::ContainsVariable(std::string name) {
-    for (Variable variable : m_variables) {
-        if (variable.GetName() == name)
+bool smpl::Context::HasFileLoaded(std::string name) {
+    for (File file : m_files) {
+        if (file.GetName() == name)
             return true;
     }
 
     return false;
 }
 
-enum ApplyVarState {
-    AVS_READ_FREE,
-    AVS_VAR_SYMBOL_READ,
-    AVS_READ_VAR
-};
-
-std::string smpl::ExecutionContext::ApplyVariables(std::string string) {
-    std::string result = "";
-    ApplyVarState state = AVS_READ_FREE;
-    std::string var_name = "";
-    int para_count = 0;
-
-    for (size_t index = 0; index < string.length(); index++) {
-        char current_char = string.at(index);
-
-        switch (state) {
-            case AVS_READ_FREE:
-                if (current_char == '%') {
-                    state = AVS_VAR_SYMBOL_READ;
-                    break;
-                }
-
-                result += current_char;
-                break;
-            
-            case AVS_VAR_SYMBOL_READ:
-                if (current_char == '(') {
-                    state = AVS_READ_VAR;
-                    var_name = "";
-                    para_count = 1;
-                    break;
-                }
-
-                // % was not for a var -> needs to be added into the result now
-                result += "%" + current_char;
-                state = AVS_READ_FREE;
-                break;
-
-            case AVS_READ_VAR:
-                if (current_char == '(')
-                    para_count++;
-                else if(current_char == ')') {
-                    para_count--;
-                    
-                    if (para_count == 0) {
-                        state = AVS_READ_FREE;
-                        bool found = false;
-
-                        for (Variable variable : m_variables) {
-                            if (variable.GetName() == var_name) {
-                                result += variable.GetValue();
-                                found = true;
-                            }
-                        }
-
-                        if (!found)
-                            throw std::runtime_error(std::string("Unknown variable") + var_name);
-                    }
-                } else
-                    var_name += current_char;
-                break;
-
-            default:
-                throw std::runtime_error(std::string("(Internal) Illegal state"));
-        }
+bool smpl::Context::RunAll() {
+    for (Target target : m_targets) {
+        // TODO Execution
     }
 
-    // End of content
-    switch(state) {
-        case AVS_VAR_SYMBOL_READ:
-            result += "$";
-            break;
-
-        case AVS_READ_VAR:
-            throw std::runtime_error(std::string("Unfinished var name"));
-    }
-
-    return result;
-}
-
-std::string smpl::ExecutionContext::GetExecutionDirectory() {
-    return m_execution_directory;
-}
-
-// ---------- ICommand ----------
-
-smpl::ICommand::ICommand() {
-
-}
-
-int smpl::ICommand::Execute(ExecutionContext *context) {
-    return 0;
-}
-
-// ---------- Context ----------
-
-smpl::Context::Context(std::vector<Target> targets) {
-    
+    return true;
 }

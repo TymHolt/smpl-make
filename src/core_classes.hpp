@@ -3,10 +3,9 @@
 
 #include <string>
 #include <vector>
+#include <file_parsing.hpp>
 
 namespace smpl {
-
-    class ICommand;
 
     class Target {
         private:
@@ -28,14 +27,30 @@ namespace smpl {
             std::string GetValue();
     };
 
+    enum CommandType {
+        CT_NONE,
+        CT_CHANGE_DIRECTORY,
+        CT_SYSTEM
+    };
+
+    class Command {
+        private:
+            CommandType m_type;
+            std::string m_value;
+        public:
+            Command(CommandType type = CT_NONE, std::string value = "");
+            CommandType GetType();
+            std::string GetValue();
+    };
+
     class Goal {
         private:
             std::string m_name;
-            std::vector<smpl::ICommand *> m_commands;
+            std::vector<Command> m_commands;
         public:
-            Goal(std::string name = "", std::vector<smpl::ICommand *> commands = {});
+            Goal(std::string name = "", std::vector<Command> commands = {});
             std::string GetName();
-            std::vector<smpl::ICommand *> GetCommands();
+            std::vector<Command> GetCommands();
     };
 
     class File {
@@ -44,36 +59,21 @@ namespace smpl {
             std::vector<Variable> m_variables;
             std::vector<Goal> m_goals;
         public:
-            File(std::string file_name);
+            File(std::string file_name = "", std::vector<Line> lines = {});
             std::string GetName();
             std::vector<Variable> Variables();
             std::vector<Goal> GetGoals();
     };
 
-    class ExecutionContext {
-        private:
-            std::string m_execution_directory;
-            std::vector<Variable> m_variables;
-        public:
-            ExecutionContext();
-            void SetExecutionDirectory(std::string execution_directory);
-            std::string GetExecutionDirectory();
-            void AddVariable(std::string name, std::string value);
-            bool ContainsVariable(std::string name);
-            std::string ApplyVariables(std::string string);
-    };
-
-    class ICommand {
-        public:
-            ICommand();
-            virtual int Execute(ExecutionContext *context);
-    };
-
     class Context {
         private:
+            std::vector<Target> m_targets;
             std::vector<File> m_files;
+
+            bool HasFileLoaded(std::string name);
         public:
             Context(std::vector<Target> targets = {});
+            bool RunAll();
     };
 }
 
