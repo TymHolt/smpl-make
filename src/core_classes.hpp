@@ -3,7 +3,6 @@
 
 #include <string>
 #include <vector>
-#include <file_parsing.hpp>
 
 namespace smpl {
 
@@ -22,83 +21,51 @@ namespace smpl {
             std::string m_name;
             std::string m_value;
         public:
-            Variable(std::string name = "", std::string value = "");
+            Variable(std::string name = "");
             std::string GetName();
-            std::string GetValue();
-    };
-
-    enum CommandType {
-        CT_NONE,
-        CT_CHANGE_DIRECTORY,
-        CT_SYSTEM
-    };
-
-    class Command {
-        private:
-            CommandType m_type;
-            std::string m_value;
-        public:
-            Command(CommandType type = CT_NONE, std::string value = "");
-            CommandType GetType();
+            // TODO Variable must also contain macro / variale fetches
+            // So GetValue() might also need context access
+            void SetValue(std::string value);
             std::string GetValue();
     };
 
     class Goal {
         private:
             std::string m_name;
-            std::vector<Command> m_commands;
+            // TODO
+            // std::vector<Instruction *> m_instructions;
+            // Instructions will contain variable / macro fetches
         public:
-            Goal(std::string name = "", std::vector<Command> commands = {});
+            Goal(std::string name = "");
+            ~Goal();
             std::string GetName();
-            std::vector<Command> GetCommands();
+            void AddSystemCommand(std::string system_command);
+            void AddUtilityCommand(std::string utility_command);
     };
 
     class File {
         private:
             std::string m_name;
-            std::vector<Variable> m_variables;
-            std::vector<Goal> m_goals;
+            std::vector<Variable *> m_variables;
+            std::vector<Goal *> m_goals;
         public:
-            File(std::string file_name = "", std::vector<Variable> variables = {}, 
-                std::vector<Goal> goals = {});
+            File(std::string name = "");
+            ~File();
             std::string GetName();
-            std::vector<Variable> Variables();
-            std::vector<Goal> GetGoals();
-    };
-
-    class FileConverter {
-        private:
-            std::vector<Variable> m_variables;
-            std::vector<Goal> m_goals;
-
-            std::string m_goal_name;
-            bool m_in_goal_block;
-            std::vector<Command> m_goal_commands;
-
-            void HandleVarLine(Line line);
-            void HandleGoalBeginLine(Line line);
-            void HandleGoalEndLine(Line line);
-            void HandleSysCommandLine(Line line);
-            void HandleCdCommandLine(Line line);
-            
-            bool ContainsVariable(std::string name);
-            bool ContainsGoal(std::string name);
-            void AddVariable(std::string name, std::string value);
-            void AddGoal(std::string name, std::vector<Command> commands);
-        public:
-            FileConverter();
-            File Convert(std::string file_name, std::vector<Line> lines);
+            Variable *AddVariable(std::string name);
+            Goal *AddGoal(std::string name);
+            Variable *GetVariableByName(std::string name);
+            Goal *GetGoalByName(std::string name);
     };
 
     class Context {
         private:
-            std::vector<Target> m_targets;
-            std::vector<File> m_files;
-
-            bool HasFileLoaded(std::string name);
+            std::vector<File *> m_files;
         public:
-            Context(std::vector<Target> targets = {});
-            bool RunAll();
+            ~Context();
+            File *AddFile(std::string name);
+            File *GetFileByName(std::string name);
+            Goal *GetGoalByTarget(Target target);
     };
 }
 

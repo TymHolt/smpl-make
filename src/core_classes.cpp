@@ -39,231 +39,129 @@ std::string smpl::Target::GetGoalName() {
 
 // ---------- Variable ----------
 
-smpl::Variable::Variable(std::string name, std::string value) {
+smpl::Variable::Variable(std::string name) {
     m_name = name;
-    m_value = value;
+    m_value = "";
 }
 
 std::string smpl::Variable::GetName() {
     return m_name;
 }
 
-std::string smpl::Variable::GetValue() {
-    return m_value;
-}
-
-// ---------- Command ----------
-
-smpl::Command::Command(CommandType type, std::string value) {
-    m_type = type;
+void smpl::Variable::SetValue(std::string value) {
     m_value = value;
 }
 
-smpl::CommandType smpl::Command::GetType() {
-    return m_type;
-}
-
-std::string smpl::Command::GetValue() {
+std::string smpl::Variable::GetValue() {
     return m_value;
 }
 
 // ---------- Goal ----------
 
-smpl::Goal::Goal(std::string name, std::vector<Command> commands) {
+smpl::Goal::Goal(std::string name) {
     m_name = name;
-    m_commands = commands;
+}
+
+smpl::Goal::~Goal() {
+
 }
 
 std::string smpl::Goal::GetName() {
     return m_name;
 }
 
-std::vector<smpl::Command> smpl::Goal::GetCommands() {
-    return m_commands;
+void smpl::Goal::AddSystemCommand(std::string system_command) {
+    // TODO Implement
+}
+
+void smpl::Goal::AddUtilityCommand(std::string utlity_command) {
+    // TODO Implement
 }
 
 // ---------- File ----------
 
-smpl::File::File(std::string file_name,  std::vector<Variable> variables,
-        std::vector<Goal> goals) {
+smpl::File::File(std::string name) {
+    m_name = name;
+}
+
+smpl::File::~File() {
+    for (Variable *variable : m_variables)
+        delete variable;
     
-    m_name = file_name;
-    m_variables = variables;
-    m_goals = goals;
+    for (Goal *goal : m_goals)
+        delete goal;
 }
 
 std::string smpl::File::GetName() {
     return m_name;
 }
 
-std::vector<smpl::Variable> smpl::File::Variables() {
-    return m_variables;    
-}           
-
-std::vector<smpl::Goal> smpl::File::GetGoals() {
-    return m_goals;
-}
-
-// ---------- FileConverter ----------
-
-smpl::FileConverter::FileConverter() {
-
-}
-
-smpl::File smpl::FileConverter::Convert(std::string file_name, std::vector<Line> lines) {
-    for (Line line : lines) {
-        switch (line.GetType()) {
-            case LT_NONE:
-                break;
-            
-            case LT_VAR:
-                HandleVarLine(line);
-                break;
-
-            case LT_GOAL_BEGIN:
-                HandleGoalBeginLine(line);
-                break;
-
-            case LT_GOAL_END:
-                HandleGoalEndLine(line);
-                break;
-
-            case LT_SYS_COMMAND:
-                HandleSysCommandLine(line);
-                break;
-
-            case LT_CD_COMMAND:
-                HandleCdCommandLine(line);
-                break;
-
-            default:
-                throw std::runtime_error(std::string("Unknown line type"));
-        }
-    }
-
-    if (m_in_goal_block)
-        throw std::runtime_error(std::string("Goal block without end"));
-
-    File file(file_name, m_variables, m_goals);
-    return file;
-}
-
-void smpl::FileConverter::HandleVarLine(Line line) {
-    if (m_in_goal_block)
-        throw std::runtime_error(std::string("Variable can not be defined inside of a goal"));
-
-    std::string name = line.GetValues()[0];
-    std::string value = line.GetValues()[1];
-
-    if (ContainsVariable(name))
-        throw std::runtime_error(std::string("Variable " + name + " defined again"));
-
-    AddVariable(name, value);
-}
-
-void smpl::FileConverter::HandleGoalBeginLine(Line line) {
-    if (m_in_goal_block)
-        throw std::runtime_error(std::string("Goal can not be defined inside of a goal"));
-
-    m_in_goal_block = true;
-    m_goal_name = line.GetValues()[0];
-    m_goal_commands = {};
-
-    if (ContainsGoal(m_goal_name))
-        throw std::runtime_error(std::string("Goal " + m_goal_name + " defined again"));
-}
-
-void smpl::FileConverter::HandleGoalEndLine(Line line) {
-    if (!m_in_goal_block)
-        throw std::runtime_error(std::string("Unexpected block end"));
-
-    m_in_goal_block = false;
-    AddGoal(m_goal_name, m_goal_commands);
-}
-
-void smpl::FileConverter::HandleSysCommandLine(Line line) {
-    if (!m_in_goal_block)
-        throw std::runtime_error(std::string("Unexpected command"));
-
-    Command command(CT_SYSTEM, line.GetValues()[0]);
-    m_goal_commands.push_back(command);
-}
-
-void smpl::FileConverter::HandleCdCommandLine(Line line) {
-    if (!m_in_goal_block)
-        throw std::runtime_error(std::string("Unexpected command"));
-
-    Command command(CT_CHANGE_DIRECTORY, line.GetValues()[0]);
-    m_goal_commands.push_back(command);
-}
-
-bool smpl::FileConverter::ContainsVariable(std::string name) {
-    for (Variable variable : m_variables) {
-        if (variable.GetName() == name)
-            return true;
-    }
-
-    return false;
-}
-
-bool smpl::FileConverter::ContainsGoal(std::string name) {
-    for (Goal goal : m_goals) {
-        if (goal.GetName() == name)
-            return true;
-    }
-
-    return false;
-}
-
-void smpl::FileConverter::AddVariable(std::string name, std::string value) {
-    Variable variable(name, value);
+smpl::Variable *smpl::File::AddVariable(std::string name) {
+    if (GetVariableByName(name) != NULL)
+        throw std::runtime_error(std::string("Variable already exists: " + name));
+    
+    smpl::Variable *variable = new Variable(name);
     m_variables.push_back(variable);
+    return variable;
 }
 
-void smpl::FileConverter::AddGoal(std::string name, std::vector<Command> commands) {
-    Goal goal(name, commands);
+smpl::Goal *smpl::File::AddGoal(std::string name) {
+    if (GetGoalByName(name) != NULL)
+        throw std::runtime_error(std::string("Goal already exists: " + name));
+    
+    smpl::Goal *goal = new Goal(name);
     m_goals.push_back(goal);
+    return goal;
+}
+
+smpl::Variable *smpl::File::GetVariableByName(std::string name) {
+    for (Variable *variable : m_variables)
+        if (variable->GetName() == name)
+            return variable;
+    
+    return NULL;
+}
+
+smpl::Goal *smpl::File::GetGoalByName(std::string name) {
+    for (Goal *goal : m_goals)
+        if (goal->GetName() == name)
+            return goal;
+    
+    return NULL;
 }
 
 // ---------- Context ----------
 
-smpl::Context::Context(std::vector<Target> targets) {
-    m_targets = targets;
-    m_files = {};
-
-    for (Target target : m_targets) {
-        std::string file_name = target.GetFileName();
-
-        if (HasFileLoaded(file_name))
-            continue;
-
-        if (!util::FileExists(file_name))
-            throw std::runtime_error(std::string("File " + file_name + " does not exist"));
-
-        std::string file_source = util::LoadTextFile(file_name);
-        
-        FileParser file_parser;
-        std::vector<Line> parsed_lines = file_parser.Parse(file_source);
-        
-        FileConverter file_converter;
-        File file = file_converter.Convert(file_name, parsed_lines);
-        m_files.push_back(file);
-    }
+smpl::Context::~Context() {
+    for (File *file : m_files)
+        delete file;
 }
 
-bool smpl::Context::HasFileLoaded(std::string name) {
-    for (File file : m_files) {
-        if (file.GetName() == name)
-            return true;
-    }
-
-    return false;
+smpl::File *smpl::Context::AddFile(std::string name) {
+    if (GetFileByName(name) != NULL)
+        throw std::runtime_error(std::string("File already exists: " + name));
+    
+    smpl::File *file = new File(name);
+    m_files.push_back(file);
+    return file;
 }
 
-bool smpl::Context::RunAll() {
-    for (Target target : m_targets) {
-        // TODO Execution
-    }
+smpl::File *smpl::Context::GetFileByName(std::string name) {
+    for (File *file : m_files)
+        if (file->GetName() == name)
+            return file;
+    
+    return NULL;
+}
 
-    return true;
+smpl::Goal *smpl::Context::GetGoalByTarget(Target target) {
+    File *file = GetFileByName(target.GetFileName());
+    if (file == NULL)
+        return NULL;
+
+    Goal *goal = file->GetGoalByName(target.GetGoalName());
+    if (goal == NULL)
+        return NULL;
+
+    return goal;
 }
