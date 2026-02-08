@@ -30,7 +30,7 @@ bool Run(int argc, char **argv) {
     for (smpl::Target target : targets) {
         // Load file if ot already loaded
         if (context.GetFileByName(target.GetFileName()) == NULL) {
-            if (!LoadFile(context.AddFile(target.GetFileName()))) {
+            if (!smpl::LoadFile(context.AddFile(target.GetFileName()))) {
                 std::cerr << "Could not load file " << target.GetFileName() << std::endl;
                 return false;
             }
