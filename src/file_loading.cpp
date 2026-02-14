@@ -1,4 +1,3 @@
-#include <stdexcept>
 #include <iostream>
 #include <file_loading.hpp>
 #include <core_classes.hpp>
@@ -67,7 +66,7 @@ class FileSource {
             return HasCurrent() ? m_content.at(m_content_index) : 0;
         }
 
-        void SkipWhitespace() {
+        void SkipWhiteSpace() {
             while (HasCurrent() && util::IsWhiteSpace(GetCurrent()))
                 Forward();
         }
@@ -141,9 +140,18 @@ class FileSource {
             return m_content_index < m_content.size();
         }
 
-        std::string ReadLine() {
-            std::string result = "";
+        bool ReadLine(std::string *result) {
+            SkipWhiteSpace();
 
+            if (!HasCurrent())
+                return false;
+
+            if (GetCurrent() == '#') {
+                SkipLine();
+                return ReadLine(result);
+            }
+
+            std::string line = "";
             while (HasCurrent()) {
                 const char current = GetCurrent();
                 const bool break_read = current == '\n';
@@ -153,14 +161,15 @@ class FileSource {
                 if (break_read)
                     break;
                 else
-                    result += current;
+                    line += current;
             }
 
-            return result;
+            *result = line;
+            return true;
         }
 
         bool ReadToken(Token *result) {
-            SkipWhitespace();
+            SkipWhiteSpace();
             if (!HasCurrent())
                 return false;
 
@@ -256,23 +265,34 @@ bool smpl::LoadFile(smpl::File *file) {
             if (!ExpectToken(&file_source, "="))
                 return false;
         
-            // TODO Continue
-            file_source.ReadLine();
+            std::string variable_value = "";
+            if (!file_source.ReadLine(&variable_value)) {
+                file_source.PrintErrorCurrent("End of file reached, expected variable value");    
+                return false;
+            }
+
+            Variable *variable = file->AddVariable(identifier.GetValue());
+            variable->SetValue(variable_value);
         } else if (type.GetValue() == "goal") {
             if (!ExpectToken(&file_source, "{"))
                 return false;
 
-            while (file_source.HasCurrent()) {
-                Token token;
-                if (!file_source.ReadToken(&token)) {
+            Goal *goal = file->AddGoal(identifier.GetValue());
+            while (true) {
+                if (!file_source.HasCurrent()) {
                     file_source.PrintErrorCurrent("End of file reached, expected '}'");
                     return false;
                 }
 
-                // TODO Continue
-
-                if (token.GetValue() == "}")
+                std::string line = "";
+                if (!file_source.ReadLine(&line))
                     break;
+
+                // TODO Start with ...
+                if (line == "}")
+                    break;
+
+                goal->AddSystemCommand(line);
             }
         } else {
             file_source.PrintErrorToken(&type, "Unknown type '" + type.GetValue() + "'");

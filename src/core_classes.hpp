@@ -29,18 +29,28 @@ namespace smpl {
             std::string GetValue();
     };
 
+    // TODO This is a dummy
+    class Command {
+        private:
+            std::string m_raw_command;
+        public:
+            Command(std::string raw_command);
+            void Execute();
+    };
+
     class Goal {
         private:
             std::string m_name;
             // TODO
-            // std::vector<Instruction *> m_instructions;
-            // Instructions will contain variable / macro fetches
+            // Commands will contain variable / macro fetches
+            std::vector<Command *> m_commands;
         public:
             Goal(std::string name = "");
             ~Goal();
             std::string GetName();
             void AddSystemCommand(std::string system_command);
             void AddUtilityCommand(std::string utility_command);
+            void Execute();
     };
 
     class File {

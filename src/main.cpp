@@ -43,7 +43,8 @@ bool Run(int argc, char **argv) {
             return false;
         }
 
-        // TODO Execute goal with Runtime
+        // Execute
+        goal->Execute();
     }
 
     return true;

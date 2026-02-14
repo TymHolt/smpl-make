@@ -56,6 +56,18 @@ std::string smpl::Variable::GetValue() {
     return m_value;
 }
 
+// ---------- Command ----------
+
+smpl::Command::Command(std::string raw_command) {
+    m_raw_command = raw_command;
+}
+
+// TODO Dummy
+#include <iostream>
+void smpl::Command::Execute() {
+    std::cout << "Command: " << m_raw_command << std::endl;
+}
+
 // ---------- Goal ----------
 
 smpl::Goal::Goal(std::string name) {
@@ -63,7 +75,8 @@ smpl::Goal::Goal(std::string name) {
 }
 
 smpl::Goal::~Goal() {
-
+    for (Command *command : m_commands)
+        delete command;
 }
 
 std::string smpl::Goal::GetName() {
@@ -71,11 +84,16 @@ std::string smpl::Goal::GetName() {
 }
 
 void smpl::Goal::AddSystemCommand(std::string system_command) {
-    // TODO Implement
+    m_commands.push_back(new Command(system_command));
 }
 
 void smpl::Goal::AddUtilityCommand(std::string utlity_command) {
-    // TODO Implement
+    m_commands.push_back(new Command(utlity_command));
+}
+
+void smpl::Goal::Execute() {
+    for (Command *command : m_commands)
+        command->Execute();
 }
 
 // ---------- File ----------
