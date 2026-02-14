@@ -3,6 +3,7 @@
 #include <file_loading.hpp>
 #include <core_classes.hpp>
 #include <util/file.hpp>
+#include <util/string_parsing.hpp>
 
 class Token {
     private:
@@ -66,13 +67,8 @@ class FileSource {
             return HasCurrent() ? m_content.at(m_content_index) : 0;
         }
 
-        bool CurrentWhiteSpace() {
-            const char current = GetCurrent();
-            return current == ' ' || current == '\n' || current == '\r' || current == '\t';
-        }
-
         void SkipWhitespace() {
-            while (HasCurrent() && CurrentWhiteSpace())
+            while (HasCurrent() && util::IsWhiteSpace(GetCurrent()))
                 Forward();
         }
 
@@ -86,12 +82,6 @@ class FileSource {
                     break;
             }
         }
-
-        bool CurrentAlphaNum() {
-            const char current = GetCurrent();
-            return (current >= 'A' && current <= 'Z') || (current >= 'a' && current <= 'z') ||
-                (current >= '0' && current <= '9') || current == '_' || current == '-';
-        }
     public:
         FileSource(std::string content) {
             m_content = content;
@@ -100,7 +90,17 @@ class FileSource {
             m_column_nr = 1;
         }
 
-        void PrintHighlightError(size_t line, size_t column, size_t length) {
+        void PrintErrorCurrent(std::string message) {
+            PrintError(m_line_nr, m_column_nr, 1, message);
+        }
+
+        void PrintErrorToken(Token *token, std::string message) {
+            PrintError(token->GetLineNr(), token->GetColumnNr(), token->GetValue().length(), message);
+        }
+
+        void PrintError(size_t line, size_t column, size_t length, std::string message) {
+            std::cerr << '[' << std::to_string(line) << ':' << std::to_string(column) << "] " << message << std::endl;
+
             size_t index = 0;
             size_t index_line = 1;
             
@@ -110,17 +110,31 @@ class FileSource {
                     index_line++;
                 
                 index++;
-                if (index >= m_content.length())
-                    return; // TODO Handle this error case?
             }
 
-            index += column - 1;
-            size_t count = 0;
-            while (index < m_content.length() && count < length) {
-                std::cout << m_content.at(index);
-                index++;
+            if (index >= m_content.length())
+                return;
+
+            size_t count = index;
+            while (true) {
+                const char current = m_content.at(count);
+                std::cerr << current;
+                if (current == '\n')
+                    break;
+                
                 count++;
             }
+
+            count = index + 1;
+            while (true) {
+                std::cerr << (count - index >= column && count - index < column + length ? '^' : ' ');
+                if (m_content.at(count) == '\n')
+                    break;
+                
+                count++;
+            }
+
+            std::cerr << std::endl;
         }
 
         bool HasCurrent() {
@@ -153,9 +167,9 @@ class FileSource {
             result->SetLineNr(m_line_nr);
             result->SetColumnNr(m_column_nr);
 
-            if (CurrentAlphaNum()) {
+            if (util::IsAlpha(GetCurrent()) || GetCurrent() == '_') {
                 std::string value = "";
-                while (HasCurrent() && CurrentAlphaNum()) {
+                while (HasCurrent() && util::IsAlphaNumExtended(GetCurrent())) {
                     value += GetCurrent();
                     Forward();
                 }
@@ -183,12 +197,37 @@ class FileSource {
             
             return token.GetValue() == value;
         }
-
-        void ExceptCurrent(std::string message) {
-            std::string position = "[" + std::to_string(m_line_nr) + ":" + std::to_string(m_column_nr) + "] ";
-            throw std::runtime_error(position + message);
-        }
 };
+
+bool ExpectToken(FileSource *file_source, std::string expected_value) {
+    Token token;
+    if (!file_source->ReadToken(&token)) {
+        file_source->PrintErrorCurrent("End of file reached, expected '" + expected_value + "'");
+        return false;
+    }
+
+    if (token.GetValue() != expected_value) {
+        file_source->PrintErrorToken(&token,
+            "Unexpected '" + token.GetValue() + "', expected '" + expected_value + "'");
+        return false;
+    }
+
+    return true;
+}
+
+bool IsValidIdentifier(std::string identifier) {
+    if (identifier.length() == 0)
+        return false;
+
+    if (!util::IsAlpha(identifier.at(0)))
+        return false;
+
+    for (size_t index = 0; index < identifier.length(); index++)
+        if (!util::IsAlphaNumExtended(identifier.at(index)))
+            return false;
+
+    return true;
+}
 
 bool smpl::LoadFile(smpl::File *file) {
     if (!util::FileExists(file->GetName()))
@@ -202,31 +241,43 @@ bool smpl::LoadFile(smpl::File *file) {
         if (!file_source.ReadToken(&type))
             return true;
         
-        Token name;
-        if (!file_source.ReadToken(&name))
-            file_source.ExceptCurrent("Expected element name");
-        
+        Token identifier;
+        if (!file_source.ReadToken(&identifier)) {
+            file_source.PrintErrorCurrent("End of file reached, expected element identifier");
+            return false;
+        }
+
+        if (!IsValidIdentifier(identifier.GetValue())) {
+            file_source.PrintErrorToken(&identifier, "Invalid identifier '" + identifier.GetValue() + "'");
+            return false;
+        }
+
         if (type.GetValue() == "var") {
-            // TODO Test case
-            if (!file_source.ReadTokenExpect("="))
-                file_source.ExceptCurrent("Expected '='");
+            if (!ExpectToken(&file_source, "="))
+                return false;
         
+            // TODO Continue
             file_source.ReadLine();
         } else if (type.GetValue() == "goal") {
-            // TODO Test case
-            if (!file_source.ReadTokenExpect("{"))
-                file_source.ExceptCurrent("Expected '{'");
-        
+            if (!ExpectToken(&file_source, "{"))
+                return false;
+
             while (file_source.HasCurrent()) {
                 Token token;
-                if (!file_source.ReadToken(&token))
-                    file_source.ExceptCurrent("Expected '}'");
-                
+                if (!file_source.ReadToken(&token)) {
+                    file_source.PrintErrorCurrent("End of file reached, expected '}'");
+                    return false;
+                }
+
+                // TODO Continue
+
                 if (token.GetValue() == "}")
                     break;
             }
-        } else
-            file_source.PrintHighlightError(type.GetLineNr(), type.GetColumnNr(), type.GetValue().length());
+        } else {
+            file_source.PrintErrorToken(&type, "Unknown type '" + type.GetValue() + "'");
+            return false;
+        }
     }
  
     return true;

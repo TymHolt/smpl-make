@@ -26,7 +26,7 @@ std::string RunMacroAllRecursive(std::string argument) {
 }
 
 std::string Macro::RunMacro(std::string macro) {
-    util::StringParser string_parser;
+    /*util::StringParser string_parser;
     string_parser.SetContent(macro);
 
     std::string macro_name = string_parser.NextToken();
@@ -35,5 +35,6 @@ std::string Macro::RunMacro(std::string macro) {
     if (macro_name == "all-recursive")
         return RunMacroAllRecursive(macro_argument);
     else
-        throw std::runtime_error(std::string("Unknown macro " + macro_name));
+        throw std::runtime_error(std::string("Unknown macro " + macro_name));*/
+    return ""; // TODO
 }
